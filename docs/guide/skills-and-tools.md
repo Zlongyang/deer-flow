@@ -50,6 +50,8 @@ and leading-zero identifiers while importing cell values into DuckDB. See the
 [data-analysis setup instructions](../../skills/public/data-analysis/SKILL.md)
 for the additional dependencies. Legacy `.xls` and CSV input do not require
 DuckDB extensions and can be analyzed offline with an empty extension cache.
+CSV inputs are literal paths: passing `'sales[1].csv'` reads that file even if
+`sales1.csv` is alongside it. Quote such paths in the shell to pass them unchanged.
 The `.xlsx` reader continues to use the spatial extension. Legacy workbooks that
 cannot be opened are reported and skipped while other input files continue;
 analysis fails if no tables can be loaded.

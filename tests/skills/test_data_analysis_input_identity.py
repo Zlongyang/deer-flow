@@ -28,6 +28,27 @@ def csv_file(root, name, value):
 
 
 @pytest.mark.parametrize(
+    "requested, neighbor",
+    [
+        ("sales[1].csv", "sales1.csv"),
+        ("batch[1]/sales.csv", "batch1/sales.csv"),
+        ("sales?.csv", "sales1.csv"),
+        ("sales*.csv", "sales1.csv"),
+    ],
+)
+def test_csv_reads_only_the_requested_path(analysis, tmp_path, requested, neighbor):
+    if os.name == "nt" and any(char in requested for char in "*?"):
+        pytest.skip("Windows filenames cannot contain * or ?")
+    source, other = tmp_path / requested, tmp_path / neighbor
+    csv_file(source.parent, source.name, 120)
+    csv_file(other.parent, other.name, 900)
+    with duckdb.connect() as con:
+        tables = analysis["load_files"](con, [str(source)])
+        table = tables[source.stem]
+        assert con.execute(f'SELECT value FROM "{table}"').fetchall() == [(120,)]
+
+
+@pytest.mark.parametrize(
     "names, expected",
     [
         (

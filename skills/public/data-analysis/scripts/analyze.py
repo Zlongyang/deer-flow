@@ -6,6 +6,7 @@ Supports schema inspection, SQL queries, statistical summaries, and result expor
 """
 
 import argparse
+import glob
 import hashlib
 import json
 import logging
@@ -49,9 +50,12 @@ def compute_files_hash(files: list[str]) -> str:
         name = os.fsencode(os.path.basename(file_path))
         hasher.update(len(name).to_bytes(8, "big"))
         hasher.update(name)
-        if os.path.splitext(file_path)[1].lower() == ".xls":
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext == ".xls":
             # Rebuild legacy caches that might have dropped a mixed-type sheet.
             hasher.update(b"legacy-xls-v2\0")
+        elif ext == ".csv":
+            hasher.update(b"literal-csv-v1\0")
         file_hasher = hashlib.sha256()
         try:
             with open(file_path, "rb") as f:
@@ -372,7 +376,7 @@ def _load_csv(
             CREATE TABLE {_quote_identifier(table_name)} AS
             SELECT * FROM read_csv_auto(?)
         """,
-            [file_path],
+            [glob.escape(file_path)],
         )
         table_map[alias] = table_name
         row_count = con.execute(
